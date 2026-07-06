@@ -11,6 +11,7 @@ const FLIGHT_SPEED = 1.8
 const MORPH_SPEED = 0.6
 const QUANTIZE_STEPS = 4
 const RAIL_THICKNESS = 1.0
+const HIGHLIGHT_DURATION = 150 // Approximately 2.5 seconds at 60fps
 
 // ============================================================================
 // Curated Collective Pools
@@ -19,7 +20,7 @@ const DESKTOP_POOL = [
   "≠Tomorrow's| Füture+",
   "[The System]|@Stack",
   "*Let's| get| stårted*",
-  '"Playing"|/Thë/|Part/',
+  "Playing|/Thë/|Part/",
   "$3,0000| Apx.SVG",
   "€Open|&|§hut!?",
   "[data-stream]",
@@ -95,6 +96,7 @@ class Particle {
   offsetX: number
   offsetY: number
   cooldown: number
+  colorTimer: number
   wordIdx: number
 
   constructor(char: string, x: number, y: number, id: number, state: ParticleState = 'idle') {
@@ -120,12 +122,21 @@ class Particle {
     this.offsetX = 0
     this.offsetY = 0
     this.cooldown = state === 'idle' ? 0 : 15
+    this.colorTimer = 0
     this.wordIdx = 0
   }
 
   update() {
     if (this.dead) return
     if (this.cooldown > 0) this.cooldown--
+
+    // Automatically fade color back to neutral when the timer runs out
+    if (this.colorTimer > 0) {
+      this.colorTimer--
+      if (this.colorTimer === 0) {
+        this.color = lightColor
+      }
+    }
 
     if (this.state === 'dying') {
       if (this.progress < 1) {
@@ -490,20 +501,17 @@ export default function GenerativeTypography() {
           }
         })
 
-        // INVERTED TRIGGER: fire shuffle when the brush LEAVES a line, not when it enters
-        hoveredLinesRef.current.forEach((keyY) => {
-          if (!currentHovered.has(keyY)) {
+        currentHovered.forEach((keyY) => {
+          if (!hoveredLinesRef.current.has(keyY)) {
             pendingShufflesRef.current.add(keyY)
           }
         })
 
         hoveredLinesRef.current = currentHovered
       } else {
-        // Mouse left the canvas entirely — scramble any rows we were hovering
-        hoveredLinesRef.current.forEach((keyY) => {
-          pendingShufflesRef.current.add(keyY)
-        })
-        hoveredLinesRef.current.clear()
+        if (hoveredLinesRef.current.size > 0) {
+          hoveredLinesRef.current.clear()
+        }
       }
 
       Array.from(pendingShufflesRef.current).forEach((keyY) => {
@@ -591,9 +599,10 @@ export default function GenerativeTypography() {
         }
       })
 
-      // --- 3. INJECT COLOR ON CLICKED SETTLED LINES ---
+      // --- 3. INJECT COLOR ON CLICKED SETTLED LINES (RANDOM WORD ON TARGET LINE) ---
       while (pendingClicksRef.current.length > 0) {
         const click = pendingClicksRef.current.shift()!
+
         metrics.yKeys.forEach((keyY) => {
           const lineP = particles.current
             .filter((p) => !p.dead && Math.round(p.baseY) === keyY)
@@ -601,6 +610,8 @@ export default function GenerativeTypography() {
           if (lineP.length > 0) {
             const minX = lineP[0].x
             const maxX = lineP[lineP.length - 1].x
+
+            // Check if the click landed inside the bounding box of THIS specific line
             const isHoveringY = Math.abs(click.y - keyY) < BRUSH_SIZE
             const isHoveringX = click.x > minX - BRUSH_SIZE && click.x < maxX + BRUSH_SIZE
 
@@ -609,27 +620,34 @@ export default function GenerativeTypography() {
               if (isSettled) {
                 const palette = ['#FF5E00', '#F39FFF', '#86AF25', '#FFCC00', '#9D9CFF']
 
-                // Find the specific word that was clicked based on X coordinate distance
-                let closestP: Particle | null = null
-                let minDx = Infinity
-                lineP.forEach((p) => {
-                  const dx = Math.abs(p.x - click.x)
-                  if (dx < minDx) {
-                    minDx = dx
-                    closestP = p
-                  }
-                })
+                // Find all unique word groups on this specific line
+                const uniqueWordIndices = [...new Set(lineP.map((p) => p.wordIdx))]
 
-                if (closestP) {
-                  const targetWordIdx = (closestP as Particle).wordIdx
+                if (uniqueWordIndices.length > 0) {
+                  // Find if there's currently an active colored word on this line
+                  const activeP = lineP.find((p) => p.colorTimer > 0)
+                  const activeWordIdx = activeP ? activeP.wordIdx : -1
+
+                  // Filter out the active word so we never pick the same one twice in a row
+                  let availableIndices = uniqueWordIndices.filter((idx) => idx !== activeWordIdx)
+
+                  // Fallback just in case a line only has one single word group total
+                  if (availableIndices.length === 0) {
+                    availableIndices = uniqueWordIndices
+                  }
+
+                  // Pick a completely random word group from the remaining available ones
+                  const targetWordIdx = availableIndices[Math.floor(Math.random() * availableIndices.length)]
                   const highlightColor = palette[Math.floor(Math.random() * palette.length)]
 
-                  // Apply the color to the clicked word, force the rest back to neutral
+                  // Apply color to the random word, and force the rest of the line to neutral
                   lineP.forEach((p) => {
                     if (p.wordIdx === targetWordIdx) {
                       p.color = highlightColor
+                      p.colorTimer = HIGHLIGHT_DURATION
                     } else {
                       p.color = lightColor
+                      p.colorTimer = 0
                     }
                   })
                 }
