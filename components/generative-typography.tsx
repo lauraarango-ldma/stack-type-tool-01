@@ -20,7 +20,7 @@ const DESKTOP_POOL = [
   "≠Tomorrow's| Füture+",
   "[The System]|@Stack",
   "*Let's| get| stårted*",
-  "Playing|/Thë/|Part/",
+  "\u201cPlaying\u201d|/Thë/|Part/",
   "$3,0000| Apx.SVG",
   "€Open|&|§hut!?",
   "[data-stream]",
@@ -599,62 +599,39 @@ export default function GenerativeTypography() {
         }
       })
 
-      // --- 3. INJECT COLOR ON CLICKED SETTLED LINES (RANDOM WORD ON TARGET LINE) ---
+      // --- 3. INJECT COLOR ON CLICK (GLOBAL COMPLETELY RANDOM) ---
       while (pendingClicksRef.current.length > 0) {
-        const click = pendingClicksRef.current.shift()!
+        pendingClicksRef.current.shift() // Consume the click without caring about X/Y coordinates
 
-        metrics.yKeys.forEach((keyY) => {
-          const lineP = particles.current
-            .filter((p) => !p.dead && Math.round(p.baseY) === keyY)
-            .sort((a, b) => a.x - b.x)
-          if (lineP.length > 0) {
-            const minX = lineP[0].x
-            const maxX = lineP[lineP.length - 1].x
-
-            // Check if the click landed inside the bounding box of THIS specific line
-            const isHoveringY = Math.abs(click.y - keyY) < BRUSH_SIZE
-            const isHoveringX = click.x > minX - BRUSH_SIZE && click.x < maxX + BRUSH_SIZE
-
-            if (isHoveringY && isHoveringX) {
-              const isSettled = lineP.every((p) => p.state === 'idle')
-              if (isSettled) {
-                const palette = ['#FF5E00', '#F39FFF', '#86AF25', '#FFCC00', '#9D9CFF']
-
-                // Find all unique word groups on this specific line
-                const uniqueWordIndices = [...new Set(lineP.map((p) => p.wordIdx))]
-
-                if (uniqueWordIndices.length > 0) {
-                  // Find if there's currently an active colored word on this line
-                  const activeP = lineP.find((p) => p.colorTimer > 0)
-                  const activeWordIdx = activeP ? activeP.wordIdx : -1
-
-                  // Filter out the active word so we never pick the same one twice in a row
-                  let availableIndices = uniqueWordIndices.filter((idx) => idx !== activeWordIdx)
-
-                  // Fallback just in case a line only has one single word group total
-                  if (availableIndices.length === 0) {
-                    availableIndices = uniqueWordIndices
-                  }
-
-                  // Pick a completely random word group from the remaining available ones
-                  const targetWordIdx = availableIndices[Math.floor(Math.random() * availableIndices.length)]
-                  const highlightColor = palette[Math.floor(Math.random() * palette.length)]
-
-                  // Apply color to the random word, and force the rest of the line to neutral
-                  lineP.forEach((p) => {
-                    if (p.wordIdx === targetWordIdx) {
-                      p.color = highlightColor
-                      p.colorTimer = HIGHLIGHT_DURATION
-                    } else {
-                      p.color = lightColor
-                      p.colorTimer = 0
-                    }
-                  })
-                }
-              }
-            }
-          }
+        // Find all tracks that are currently fully settled
+        const settledKeys = metrics.yKeys.filter((keyY) => {
+          const lineP = particles.current.filter((p) => !p.dead && Math.round(p.baseY) === keyY)
+          return lineP.length > 0 && lineP.every((p) => p.state === 'idle')
         })
+
+        if (settledKeys.length > 0) {
+          const palette = ['#FF5E00', '#F39FFF', '#86AF25', '#FFCC00', '#9D9CFF']
+          const highlightColor = palette[Math.floor(Math.random() * palette.length)]
+
+          // Pick a completely random settled line
+          const randomKeyY = settledKeys[Math.floor(Math.random() * settledKeys.length)]
+          const lineP = particles.current.filter((p) => !p.dead && Math.round(p.baseY) === randomKeyY)
+
+          // Pick a completely random word group on that line
+          const uniqueWordIndices = [...new Set(lineP.map((p) => p.wordIdx))]
+          const targetWordIdx = uniqueWordIndices[Math.floor(Math.random() * uniqueWordIndices.length)]
+
+          // Apply color to that specific word, and force EVERY other particle globally back to neutral
+          particles.current.forEach((p) => {
+            if (Math.round(p.baseY) === randomKeyY && p.wordIdx === targetWordIdx && p.state === 'idle') {
+              p.color = highlightColor
+              p.colorTimer = HIGHLIGHT_DURATION
+            } else {
+              p.color = lightColor
+              p.colorTimer = 0
+            }
+          })
+        }
       }
 
       particles.current.forEach((particle) => particle.draw(ctx))
@@ -727,7 +704,6 @@ export default function GenerativeTypography() {
     mouse.current.isDown = false
     mouse.current.x = -1000
     mouse.current.y = -1000
-    hoveredLinesRef.current.clear()
   }
 
   return (
