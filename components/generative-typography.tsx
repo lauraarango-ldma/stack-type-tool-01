@@ -18,7 +18,7 @@ const HIGHLIGHT_DURATION = 150 // Approximately 2.5 seconds at 60fps
 // ============================================================================
 const DESKTOP_POOL = [
   "≠|Tomorrow's| Füture+",
-  "[The System]|@Stack",
+  "[The |System]|@Stack",
   "*Let's| get| stårted*",
   "Playing|/Thë/|Part/",
   "$3,0000| Apx.SVG",
@@ -26,7 +26,7 @@ const DESKTOP_POOL = [
   "[data|-|stream]",
   "reböot| šys_|initialize",
   "++|cømmunity|_~",
-  "[stack]|@overflow",
+  "[stack]|@|overflow",
   "€Open|&|§hare!?",
   "//|syntax_err|?",
   "{...}|büild/|≠code!",
