@@ -57,7 +57,7 @@ const LAYOUTS = {
     width: 1920,
     height: 1080,
     fontSize: 145,
-    lineCount: 8,
+    lineCount: 7,
     safeMargin: 180,
     spreadHeight: false,
   },
