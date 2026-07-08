@@ -17,18 +17,18 @@ const HIGHLIGHT_DURATION = 150 // Approximately 2.5 seconds at 60fps
 // Curated Collective Pools
 // ============================================================================
 const DESKTOP_POOL = [
-  "≠Tomorrow's| Füture+",
+  "≠|Tomorrow's| Füture+",
   "[The System]|@Stack",
   "*Let's| get| stårted*",
   "Playing|/Thë/|Part/",
   "$3,0000| Apx.SVG",
   "€Open|&|§hut!?",
-  "[data-stream]",
-  "reböot| šys_initialize",
-  "++cømmunity_~",
+  "[data|-|stream]",
+  "reböot| šys_|initialize",
+  "++|cømmunity|_~",
   "[stack]|@overflow",
   "€Open|&|§hare!?",
-  "// syntax_err|?",
+  "//|syntax_err|?",
   "{...}|büild/|≠code!",
   "making| it| vísible*",
 ]
