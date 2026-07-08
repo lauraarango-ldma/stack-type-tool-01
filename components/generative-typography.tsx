@@ -296,7 +296,7 @@ export default function GenerativeTypography() {
 
   const metrics = useMemo<Metrics>(() => {
     const { width, height, fontSize, lineCount, spreadHeight } = currentLayout
-    const lineHeight = spreadHeight ? (height * 0.9) / lineCount : fontSize * 0.85
+    const lineHeight = spreadHeight ? (height * 0.9) / lineCount : fontSize * 1.0
     const tracking = fontSize * -0.05
 
     const masterStartY = (height - lineCount * lineHeight) / 2 + fontSize / 2
