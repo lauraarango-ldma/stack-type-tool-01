@@ -65,9 +65,9 @@ const LAYOUTS = {
     width: 1080,
     height: 1350,
     fontSize: 140,
-    lineCount: 10,
+    lineCount: 9,
     safeMargin: 100,
-    spreadHeight: true,
+    spreadHeight: false,
   },
 }
 
